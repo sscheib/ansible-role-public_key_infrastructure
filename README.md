@@ -1,4 +1,4 @@
-[![ansible-lint](https://github.com/sscheib/ansible-role-generate_ssl_key_pairs/actions/workflows/ansible-lint.yml/badge.svg)](https://github.com/sscheib/ansible-role-generate_ssl_key_pairs/actions/workflows/ansible-lint.yml) [![Publish latest release to Ansible Galaxy](https://github.com/sscheib/ansible-role-generate_ssl_key_pairs/actions/workflows/ansible-galaxy.yml/badge.svg?branch=main)](https://github.com/sscheib/ansible-role-generate_ssl_key_pairs/actions/workflows/ansible-galaxy.yml)
+[![ansible-lint](https://github.com/sscheib/ansible-role-public_key_infrastructure/actions/workflows/ansible-lint.yml/badge.svg?branch=main)](https://github.com/sscheib/ansible-role-public_key_infrastructure/actions/workflows/ansible-lint.yml) [![Publish latest release to Ansible Galaxy](https://github.com/sscheib/ansible-role-public_key_infrastructure/actions/workflows/ansible-galaxy.yml/badge.svg)](https://github.com/sscheib/ansible-role-public_key_infrastructure/actions/workflows/ansible-galaxy.yml)
 
 public_key_infrastructure
 =========
