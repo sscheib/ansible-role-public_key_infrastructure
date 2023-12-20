@@ -1,0 +1,104 @@
+---
+- name: 'Gather minimal facts'
+  ansible.builtin.setup:
+    gather_subset:
+      - '!all'
+      - '!min'
+      - 'distribution'
+      - 'os_family'
+
+- name: 'Include OS dependent variables'
+  ansible.builtin.include_vars: "{{ lookup('first_found', params) }}"
+  vars:
+    params:
+      files:
+        - '{{ ansible_os_family }}_{{ ansible_distribution_major_version }}.yml'
+        - '{{ ansible_distribution }}.yml'
+        - '{{ ansible_os_family }}.yml'
+        - 'main.yml'  # fallback, vars/main.yml is always loaded by Ansible
+      paths:
+        - '{{ role_path }}/vars'
+        - '{{ playbook_dir }}/vars'
+
+- name: 'Include tasks to install required packages'
+  ansible.builtin.include_tasks:
+    file: 'install.yml'
+
+- name: 'Include tasks to generate root certificate authorities'
+  ansible.builtin.include_tasks:
+    file: 'generate_root_ca.yml'
+  vars:
+    # CA root path
+    __t_ca_root_dir_path: '{{ __t_root_ca.root_dir_path }}'
+    __t_ca_root_dir_owner: '{{ __t_root_ca.root_dir_owner }}'
+    __t_ca_root_dir_group: '{{ __t_root_ca.root_dir_group }}'
+    __t_ca_root_dir_mode: '{{ __t_root_ca.root_dir_mode }}'
+
+    # CA cert path
+    __t_ca_cert_dir_path: '{{ __t_root_ca.cert_dir_path }}'
+    __t_ca_cert_dir_owner: '{{ __t_root_ca.cert_dir_owner }}'
+    __t_ca_cert_dir_group: '{{ __t_root_ca.cert_dir_group }}'
+    __t_ca_cert_dir_mode: '{{ __t_root_ca.cert_dir_mode }}'
+
+    # CA private key path
+    __t_ca_priv_key_dir_path: '{{ __t_root_ca.priv_key_dir_path }}'
+    __t_ca_priv_key_dir_owner: '{{ __t_root_ca.priv_key_dir_owner }}'
+    __t_ca_priv_key_dir_group: '{{ __t_root_ca.priv_key_dir_group }}'
+    __t_ca_priv_key_dir_mode: '{{ __t_root_ca.priv_key_dir_mode }}'
+
+    # CA CSR path
+    __t_ca_csr_dir_path: '{{ __t_root_ca.csr_dir_path }}'
+    __t_ca_csr_dir_owner: '{{ __t_root_ca.csr_dir_owner }}'
+    __t_ca_csr_dir_group: '{{ __t_root_ca.csr_dir_group }}'
+    __t_ca_csr_dir_mode: '{{ __t_root_ca.csr_dir_mode }}'
+
+    # CA CRL path
+    __t_ca_crl_dir_path: '{{ __t_root_ca.crl_dir_path }}'
+    __t_ca_crl_dir_owner: '{{ __t_root_ca.crl_dir_owner }}'
+    __t_ca_crl_dir_group: '{{ __t_root_ca.crl_dir_group }}'
+    __t_ca_crl_dir_mode: '{{ __t_root_ca.crl_dir_mode }}'
+
+    # Private key
+    __t_ca_priv_key_path: '{{ __t_root_ca.priv_key_path }}'
+    __t_ca_priv_key_pass_cipher: '{{ __t_root_ca.priv_key_pass_cipher }}'
+    __t_ca_priv_key_pass: '{{ __t_root_ca.priv_key_pass }}'
+    __t_ca_priv_key_type: '{{ __t_root_ca.priv_key_type }}'
+    __t_ca_priv_key_size: '{{ __t_root_ca.priv_key_size }}'
+    __t_ca_priv_key_owner: '{{ __t_root_ca.priv_key_owner }}'
+    __t_ca_priv_key_group: '{{ __t_root_ca.priv_key_group }}'
+    __t_ca_priv_key_mode: '{{ __t_root_ca.priv_key_mode }}'
+    __t_ca_priv_key_regenerate: '{{ __t_root_ca.priv_key_regenerate }}'
+    __t_ca_priv_key_force_generation: '{{ __t_root_ca.priv_key_force_generation }}'
+
+    # CA CSR
+    __t_ca_csr_path: '{{ __t_root_ca.csr_path }}'
+    __t_ca_csr_common_name: '{{ __t_root_ca.csr_common_name }}'
+    __t_ca_csr_email: '{{ __t_root_ca.csr_email }}'
+    __t_ca_csr_org: '{{ __t_root_ca.csr_org }}'
+    __t_ca_csr_country: '{{ __t_root_ca.csr_country }}'
+    __t_ca_csr_org_unit: '{{ __t_root_ca.csr_org_unit }}'
+    __t_ca_csr_state: '{{ __t_root_ca.csr_state }}'
+    __t_ca_csr_loc: '{{ __t_root_ca.csr_loc }}'
+
+    # CA certificate (aka public key)
+    __t_ca_cert_path: '{{ __t_root_ca.cert_path }}'
+    __t_ca_cert_owner: '{{ __t_root_ca.cert_owner }}'
+    __t_ca_cert_group: '{{ __t_root_ca.cert_group }}'
+    __t_ca_cert_mode: '{{ __t_root_ca.cert_mode }}'
+
+    # CA CRL
+    __t_ca_crl_enable: '{{ __t_root_ca.crl_enable }}'
+    __t_ca_crl_path: '{{ __t_root_ca.crl_path }}'
+    __t_ca_crl_owner: '{{ __t_root_ca.crl_owner }}'
+    __t_ca_crl_group: '{{ __t_root_ca.crl_group }}'
+    __t_ca_crl_mode: '{{ __t_root_ca.crl_mode }}'
+    __t_ca_crl_next_update: '{{ __t_root_ca.crl_next_update }}'
+    __t_ca_crl_generation_mode: '{{ __t_root_ca.crl_generation_mode }}'
+    __t_ca_crl_ignore_timestamps: '{{ __t_root_ca.crl_ignore_timestamps }}'
+
+    # intermediates to create
+    __t_ca_intermediates: '{{ __t_root_ca.intermediates | default([]) }}'
+  loop: '{{ _pki_root_certificate_authorities }}'
+  loop_control:
+    loop_var: '__t_root_ca'
+...

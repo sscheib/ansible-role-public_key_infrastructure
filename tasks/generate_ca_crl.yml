@@ -1,0 +1,156 @@
+---
+- name: 'generate_ca_crl | Ensure string variables are defined properly'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', __t_var) is defined"
+      - "lookup('ansible.builtin.vars', __t_var) is string"
+      - "lookup('ansible.builtin.vars', __t_var) != None"
+      - "lookup('ansible.builtin.vars', __t_var) != ''"
+    success_msg: "Variable '{{ __t_var }}' defined properly - value: '{{ lookup('ansible.builtin.vars', __t_var) }}'"
+    fail_msg: "Variable '{{ __t_var }}' failed to validate"
+    quiet: '{{ _pki_quiet_assert }}'
+  loop:
+    # CRL directory
+    - '__t_crl_dir_path'
+    - '__t_crl_dir_owner'
+    - '__t_crl_dir_group'
+    - '__t_crl_dir_mode'
+
+    # CRL certificate
+    - '__t_crl_path'
+    - '__t_crl_owner'
+    - '__t_crl_group'
+    - '__t_crl_mode'
+    - '__t_crl_next_update'
+    - '__t_crl_generation_mode'
+
+    # CA variables
+    - '__t_ca_priv_key_path'
+    - '__t_ca_cert_path'
+    - '__t_ca_cert_dir_path'
+
+  loop_control:
+    loop_var: '__t_var'
+    label: '{{ __t_var }}'
+
+- name: 'generate_ca_crl | Ensure secret string variables are defined properly'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', __t_var) is defined"
+      - "lookup('ansible.builtin.vars', __t_var) is string"
+      - "lookup('ansible.builtin.vars', __t_var) != None"
+      - "lookup('ansible.builtin.vars', __t_var) != ''"
+  no_log: true
+  loop:
+    - '__t_ca_priv_key_pass'
+  loop_control:
+    loop_var: '__t_var'
+
+- name: 'generate_ca_crl | Ensure boolean variables are defined properly'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', __t_var) is defined"
+      - "lookup('ansible.builtin.vars', __t_var) | bool | string == lookup('ansible.builtin.vars', __t_var) | string"
+      - "lookup('ansible.builtin.vars', __t_var) is boolean"
+
+    success_msg: "Variable '{{ __t_var }}' defined properly - value: '{{ lookup('ansible.builtin.vars', __t_var) }}'"
+    fail_msg: "Variable '{{ __t_var }}' failed to validate"
+    quiet: '{{ _pki_quiet_assert }}'
+  loop:
+    - '__t_crl_ignore_timestamps'
+  loop_control:
+    loop_var: '__t_var'
+    label: '{{ __t_var }}'
+
+- name: 'generate_ca_crl | Ensure list variables are defined properly'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', __var) is defined"
+      - "lookup('ansible.builtin.vars', __var) | list | string == lookup('ansible.builtin.vars', __var) | string"
+      - "lookup('ansible.builtin.vars', __var) is sequence"
+    success_msg: "Variable '{{ __var }}' defined properly"
+    fail_msg: "Variable '{{ __var }}' failed to validate"
+    quiet: '{{ _pki_quiet_assert }}'
+  loop:
+    - '__t_pki_certificates'
+  loop_control:
+    loop_var: '__var'
+    label: '{{ __var }}'
+
+- name: 'generate_ca_crl | Ensure CA CRL directory exists: {{ __t_crl_dir_path }}'
+  ansible.builtin.file:
+    path: '{{ __t_crl_dir_path }}'
+    state: 'directory'
+    owner: '{{ __t_crl_dir_owner }}'
+    group: '{{ __t_crl_dir_group }}'
+    mode: '{{ __t_crl_dir_mode }}'
+  become: true
+
+- name: >-
+    generate_ca_crl | Get issuer information of the CA certificate to set the CRL issuer accordingly:
+    {{ __t_ca_cert_path }}
+  community.crypto.x509_certificate_info:
+    path: '{{ __t_ca_cert_path }}'
+  become: true
+  register: '__t_cert_info'
+
+- name: 'generate_ca_crl | Set fact: Ordered issuer facts'
+  ansible.builtin.set_fact:
+    __t_issuer:
+      - C: '{{ __t_cert_info.subject.countryName }}'
+      - ST: '{{ __t_cert_info.subject.stateOrProvinceName }}'
+      - L: '{{ __t_cert_info.subject.localityName }}'
+      - O: '{{ __t_cert_info.subject.organizationName }}'
+      - OU: '{{ __t_cert_info.subject.organizationalUnitName }}'
+      - CN: '{{ __t_cert_info.subject.commonName }}'
+      - emailAddress: '{{ __t_cert_info.subject.emailAddress }}'
+
+- name: 'generate_ca_crl | Set fact: List of revoked certificates'
+  ansible.builtin.set_fact:
+    __t_revoked_certificates: >-
+      {{
+        __t_revoked_certificates | default([]) + [
+          {
+            'path': __t_revoked_cert.cert_path
+          }
+        ]
+      }}
+  # try looking up the cert, if it does not exist, skip it
+  # this is to workaround the issue that a user could mean to revoke a certificate from
+  # the beginning, which we are unable to catch, as Ansible is "stateless"
+  when: >
+    lookup('first_found', dict(files=[__t_revoked_cert.cert_path], skip=true)) |
+    ternary(lookup('file', __t_revoked_cert.cert_path, errors='ignore'), false)
+  loop: >-
+    {{
+      __t_pki_certificates |
+      selectattr('revoked', 'defined') |
+      selectattr('revoked', 'equalto', true)
+    }}
+  loop_control:
+    loop_var: '__t_revoked_cert'
+
+- name: 'generate_ca_crl | Generate the CA CRL: {{ __t_crl_path }}'
+  community.crypto.x509_crl:
+    path: '{{ __t_crl_path }}'
+    privatekey_path: '{{ __t_ca_priv_key_path }}'
+    privatekey_passphrase: '{{ __t_ca_priv_key_pass }}'
+    issuer_ordered: '{{ __t_issuer }}'
+    last_update: '+0s'
+    next_update: '{{ __t_crl_next_update }}'
+    revoked_certificates: '{{ __t_revoked_certificates | default([]) }}'
+    owner: '{{ __t_crl_owner }}'
+    group: '{{ __t_crl_group }}'
+    crl_mode: '{{ __t_crl_generation_mode }}'
+    ignore_timestamps: '{{ __t_crl_ignore_timestamps }}'
+  become: true
+
+- name: 'generate_ca_crl | Ensure CA CRL has proper permissions set: {{ __t_crl_path }}'
+  ansible.builtin.file:
+    path: '{{ __t_crl_path }}'
+    state: 'file'
+    owner: '{{ __t_crl_owner }}'
+    group: '{{ __t_crl_group }}'
+    mode: '{{ __t_crl_mode }}'
+  become: true
+...

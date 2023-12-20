@@ -1,0 +1,134 @@
+---
+# NOTE: _crt_quiet_assert does not impact this task, as it first needs to be ensured that it actually is
+#       properly defined
+- name: 'assert | Ensure mandatory variables, as  well as variables, which have a default value, are set (boolean)'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', _var) is defined"
+      - "lookup('ansible.builtin.vars', _var) | bool | string == lookup('ansible.builtin.vars', _var) | string"
+      - "lookup('ansible.builtin.vars', _var) is boolean"
+
+    success_msg: "Variable '{{ _var }}' defined properly - value: '{{ lookup('ansible.builtin.vars', _var) }}'"
+    fail_msg: "Variable '{{ _var }}' failed to validate"
+  loop:
+    - '_crt_ca_fetch_ca_cert'
+    - '_crt_ca_fetch_ca_chain_cert'
+    - '_crt_ca_fetch_ca_crl_cert'
+    - '_crt_combine_ca_crl_certs'
+    - '_crt_force_priv_key_generation'
+    - '_crt_quiet_assert'
+    - '_crt_remove_temporary_local_certificates'
+  loop_control:
+    loop_var: '_var'
+
+- name: 'assert | Ensure mandatory variables, as well as variables, which have a default value, are set (string)'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', _var) is defined"
+      - "lookup('ansible.builtin.vars', _var) is string"
+      - "lookup('ansible.builtin.vars', _var) != None"
+      - "lookup('ansible.builtin.vars', _var) != ''"
+
+    success_msg: "Variable '{{ _var }}' defined properly - value: '{{ lookup('ansible.builtin.vars', _var) }}'"
+    fail_msg: "Variable '{{ _var }}' failed to validate"
+    quiet: '{{ _crt_quiet_assert }}'
+  loop:
+    - '_crt_cert_fqdn'
+    - '_crt_crl_dest_name'
+    - '_crt_ca_cert_dir_path'
+    - '_crt_ca_cert_name'
+    - '_crt_ca_chain_cert_name'
+    - '_crt_ca_cert_path'
+    - '_crt_ca_chain_cert_path'
+    - '_crt_ca_csr_dir_path'
+    - '_crt_ca_priv_key_dir_path'
+    - '_crt_ca_priv_key_name'
+    - '_crt_ca_priv_key_path'
+    - '_crt_ca_root_dir'
+    - '_crt_cert_suffix'
+    - '_crt_csr_common_name'
+    - '_crt_csr_country'
+    - '_crt_csr_email'
+    - '_crt_csr_loc'
+    - '_crt_csr_org'
+    - '_crt_csr_org_unit'
+    - '_crt_csr_state'
+    - '_crt_csr_suffix'
+    - '_crt_local_dest_path'
+    - '_crt_local_dest_path_group'
+    - '_crt_local_dest_path_mode'
+    - '_crt_local_dest_path_owner'
+    - '_crt_pki_host'
+    - '_crt_priv_key_suffix'
+    - '_crt_priv_key_type'
+    - '_crt_remote_ca_crl_path'
+    - '_crt_remote_ca_crl_owner'
+    - '_crt_remote_ca_crl_group'
+    - '_crt_remote_ca_crl_mode'
+    - '_crt_remote_ca_crl_dir_owner'
+    - '_crt_remote_ca_crl_dir_group'
+    - '_crt_remote_ca_crl_dir_mode'
+    - '_crt_remote_ca_public_key_path'
+    - '_crt_remote_ca_public_key_owner'
+    - '_crt_remote_ca_public_key_group'
+    - '_crt_remote_ca_public_key_mode'
+    - '_crt_remote_ca_public_key_dir_owner'
+    - '_crt_remote_ca_public_key_dir_group'
+    - '_crt_remote_ca_public_key_dir_mode'
+    - '_crt_remote_private_key_path'
+    - '_crt_remote_private_key_owner'
+    - '_crt_remote_private_key_group'
+    - '_crt_remote_private_key_mode'
+    - '_crt_remote_private_key_dir_owner'
+    - '_crt_remote_private_key_dir_group'
+    - '_crt_remote_private_key_dir_mode'
+    - '_crt_remote_public_key_path'
+    - '_crt_remote_public_key_owner'
+    - '_crt_remote_public_key_group'
+    - '_crt_remote_public_key_mode'
+    - '_crt_remote_public_key_dir_owner'
+    - '_crt_remote_public_key_dir_group'
+    - '_crt_remote_public_key_dir_mode'
+  loop_control:
+    loop_var: '_var'
+
+- name: 'assert | Ensure mandatory variables, as well as variables, which have a default value, are set (integer)'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', _var) is defined"
+      - "lookup('ansible.builtin.vars', _var) | int | string == lookup('ansible.builtin.vars', _var) | string"
+      - "lookup('ansible.builtin.vars', _var) | int is number"
+      - "lookup('ansible.builtin.vars', _var) | int >= 0"
+    success_msg: "Variable '{{ _var }}' defined properly - value: '{{ lookup('ansible.builtin.vars', _var) }}'"
+    fail_msg: "Variable '{{ _var }}' failed to validate"
+    quiet: '{{ _crt_quiet_assert }}'
+  loop:
+    - '_crt_priv_key_size'
+  loop_control:
+    loop_var: '_var'
+
+- name: 'assert | Ensure _crt_ca_crl_certs is defined properly if requested to fetch CA CRL certs'
+  ansible.builtin.assert:
+    that:
+      - '_crt_ca_crl_certs is defined'
+      - '_crt_ca_crl_certs | list | string == _crt_ca_crl_certs | string'
+      - '_crt_ca_crl_certs is sequence'
+      - '_crt_ca_crl_certs | length > 0'
+    success_msg: "Variable '_crt_ca_crl_certs' defined properly - value: '{{ _crt_ca_crl_certs }}'"
+    fail_msg: "Variable '_crt_ca_crl_certs' failed to validate"
+    quiet: '{{ _crt_quiet_assert }}'
+  when: >
+    _crt_ca_fetch_ca_crl_cert is defined
+    and _crt_ca_fetch_ca_crl_cert
+
+- name: 'assert | Ensure _crt_ca_priv_key_pass is set (no log)'
+  ansible.builtin.assert:
+    that:
+      - '_crt_ca_priv_key_pass is defined'
+      - '_crt_ca_priv_key_pass is string'
+      - '_crt_ca_priv_key_pass | length > 0'
+    success_msg: "Variable '_crt_ca_priv_key_pass' defined properly'"
+    fail_msg: "Variable '_crt_ca_priv_key_pass' failed to validate"
+    quiet: true
+  no_log: true
+...

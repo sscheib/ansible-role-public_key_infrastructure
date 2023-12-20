@@ -1,0 +1,4 @@
+---
+# whether to quiet assert statements
+_def_pki_quiet_assert: true
+...

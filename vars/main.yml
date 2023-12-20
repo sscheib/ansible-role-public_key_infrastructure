@@ -1,0 +1,7 @@
+---
+# definition of the root CA/s and their optional intermediate CA/s
+_pki_root_certificate_authorities: '{{ pki_root_certificate_authorities | mandatory }}'
+
+# whether to quiet assert statements
+_pki_quiet_assert: '{{ pki_quiet_assert | default(_def_pki_quiet_assert) }}'
+...

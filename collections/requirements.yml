@@ -1,0 +1,5 @@
+---
+collections:
+  - name: 'community.crypto'
+    version: '>=2.16.0'
+...

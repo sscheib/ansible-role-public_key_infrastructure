@@ -1,0 +1,30 @@
+---
+exclude_paths:
+  - '.git/'
+  - 'files/'
+
+kinds:
+  - tasks: 'tasks/*.{yml,yaml}'
+  - vars: 'vars/*.{yml,yaml}'
+  - vars: 'defaults/*.{yml,yaml}'
+  - meta: 'meta/main.{yml,yaml}'
+  - yaml: '.ansible-lint'
+  - yaml: '.github/workflows/*.{yml,yaml}'
+  - yaml: '.pre-commit-config.yaml'
+  - yaml: '.yamllint'
+  - yaml: 'collections/requirements.yml'
+
+loop_var_prefix: '^(__|{role}_)'
+max_block_depth: 20
+offline: true
+profile: 'production'
+skip_action_validation: false
+skip_list: []
+task_name_prefix: '{stem} | '
+use_default_rules: true
+var_naming_pattern: '^[a-z_][a-z0-9_]*$'
+warn_list:
+  - 'experimental'
+write_list:
+  - 'none'
+...

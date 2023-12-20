@@ -1,0 +1,326 @@
+---
+- name: 'generate_root_ca | Ensure string variables are defined properly'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', __t_var) is defined"
+      - "lookup('ansible.builtin.vars', __t_var) is string"
+      - "lookup('ansible.builtin.vars', __t_var) != None"
+      - "lookup('ansible.builtin.vars', __t_var) != ''"
+    success_msg: "Variable '{{ __t_var }}' defined properly - value: '{{ lookup('ansible.builtin.vars', __t_var) }}'"
+    fail_msg: "Variable '{{ __t_var }}' failed to validate"
+    quiet: '{{ _pki_quiet_assert }}'
+  loop:
+    # CA root path
+    - '__t_ca_root_dir_path'
+    - '__t_ca_root_dir_owner'
+    - '__t_ca_root_dir_group'
+    - '__t_ca_root_dir_mode'
+
+    # CA cert path
+    - '__t_ca_cert_dir_path'
+    - '__t_ca_cert_dir_owner'
+    - '__t_ca_cert_dir_group'
+    - '__t_ca_cert_dir_mode'
+
+    # CA private key path
+    - '__t_ca_priv_key_dir_path'
+    - '__t_ca_priv_key_dir_owner'
+    - '__t_ca_priv_key_dir_group'
+    - '__t_ca_priv_key_dir_mode'
+
+    # CA CSR path
+    - '__t_ca_csr_dir_path'
+    - '__t_ca_csr_dir_owner'
+    - '__t_ca_csr_dir_group'
+    - '__t_ca_csr_dir_mode'
+
+    # private key
+    - '__t_ca_priv_key_path'
+    - '__t_ca_priv_key_pass_cipher'
+    - '__t_ca_priv_key_type'
+    - '__t_ca_priv_key_owner'
+    - '__t_ca_priv_key_group'
+    - '__t_ca_priv_key_mode'
+    - '__t_ca_priv_key_regenerate'
+
+    # CA CSR
+    - '__t_ca_csr_path'
+    - '__t_ca_csr_common_name'
+    - '__t_ca_csr_email'
+    - '__t_ca_csr_org'
+    - '__t_ca_csr_country'
+    - '__t_ca_csr_org_unit'
+    - '__t_ca_csr_state'
+    - '__t_ca_csr_loc'
+
+    # CA certificate (aka public key)
+    - '__t_ca_cert_path'
+    - '__t_ca_cert_owner'
+    - '__t_ca_cert_group'
+    - '__t_ca_cert_mode'
+  loop_control:
+    loop_var: '__t_var'
+    label: '{{ __t_var }}'
+
+- name: 'generate_root_ca | Ensure secret string variables are defined properly'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', __t_var) is defined"
+      - "lookup('ansible.builtin.vars', __t_var) is string"
+      - "lookup('ansible.builtin.vars', __t_var) != None"
+      - "lookup('ansible.builtin.vars', __t_var) != ''"
+  no_log: true
+  loop:
+    - '__t_ca_priv_key_pass'
+  loop_control:
+    loop_var: '__t_var'
+
+- name: 'generate_root_ca | Ensure integer variables are defined properly'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', __t_var) is defined"
+      - "lookup('ansible.builtin.vars', __t_var) | int | string == lookup('ansible.builtin.vars', __t_var) | string"
+      - "lookup('ansible.builtin.vars', __t_var) | int is number"
+      - "lookup('ansible.builtin.vars', __t_var) | int is integer"
+      - "lookup('ansible.builtin.vars', __t_var) | int >= 0"
+    success_msg: "Variable '{{ __t_var }}' defined properly - value: '{{ lookup('ansible.builtin.vars', __t_var) }}'"
+    fail_msg: "Variable '{{ __t_var }}' failed to validate"
+    quiet: '{{ _pki_quiet_assert }}'
+  loop:
+    - '__t_ca_priv_key_size'
+  loop_control:
+    loop_var: '__t_var'
+    label: '{{ __t_var }}'
+
+- name: 'generate_root_ca | Ensure boolean variables are defined properly'
+  ansible.builtin.assert:
+    that:
+      - "lookup('ansible.builtin.vars', __t_var) is defined"
+      - "lookup('ansible.builtin.vars', __t_var) | bool | string == lookup('ansible.builtin.vars', __t_var) | string"
+      - "lookup('ansible.builtin.vars', __t_var) is boolean"
+
+    success_msg: "Variable '{{ __t_var }}' defined properly - value: '{{ lookup('ansible.builtin.vars', __t_var) }}'"
+    fail_msg: "Variable '{{ __t_var }}' failed to validate"
+    quiet: '{{ _pki_quiet_assert }}'
+  loop:
+    - '__t_ca_priv_key_force_generation'
+  loop_control:
+    loop_var: '__t_var'
+    label: '{{ __t_var }}'
+
+- name: 'generate_root_ca | Handle CA private and public key generation'
+  become: true
+  block:
+
+    - name: 'generate_root_ca | Create CA root directory: {{ __t_ca_root_dir_path }}'
+      ansible.builtin.file:
+        path: '{{ __t_ca_root_dir_path }}'
+        state: 'directory'
+        owner: '{{ __t_ca_root_dir_owner }}'
+        group: '{{ __t_ca_root_dir_group }}'
+        mode: '{{ __t_ca_root_dir_mode }}'
+
+    - name: 'generate_root_ca | Create CA certs directory: {{ __t_ca_cert_dir_path }}'
+      ansible.builtin.file:
+        path: '{{ __t_ca_cert_dir_path }}'
+        state: 'directory'
+        owner: '{{ __t_ca_cert_dir_owner }}'
+        group: '{{ __t_ca_cert_dir_group }}'
+        mode: '{{ __t_ca_cert_dir_mode }}'
+
+    - name: 'generate_root_ca | Create CA private key directory: {{ __t_ca_priv_key_dir_path }}'
+      ansible.builtin.file:
+        path: '{{ __t_ca_priv_key_dir_path }}'
+        state: 'directory'
+        owner: '{{ __t_ca_priv_key_dir_owner }}'
+        group: '{{ __t_ca_priv_key_dir_group }}'
+        mode: '{{ __t_ca_priv_key_dir_mode }}'
+
+    - name: 'generate_root_ca | Create CA CSR certs directory: {{ __t_ca_csr_dir_path }}'
+      ansible.builtin.file:
+        path: '{{ __t_ca_csr_dir_path }}'
+        state: 'directory'
+        owner: '{{ __t_ca_csr_dir_owner }}'
+        group: '{{ __t_ca_csr_dir_group }}'
+        mode: '{{ __t_ca_csr_dir_mode }}'
+
+    - name: 'generate_root_ca | Create CA private key with password protection: {{ __t_ca_priv_key_path }}'
+      community.crypto.openssl_privatekey:
+        path: '{{ __t_ca_priv_key_path }}'
+        passphrase: '{{ __t_ca_priv_key_pass }}'
+        cipher: '{{ __t_ca_priv_key_pass_cipher }}'
+        type: '{{ __t_ca_priv_key_type }}'
+        size: '{{ __t_ca_priv_key_size }}'
+        force: '{{ __t_ca_priv_key_force_generation }}'
+        owner: '{{ __t_ca_priv_key_owner }}'
+        group: '{{ __t_ca_priv_key_group }}'
+        mode: '{{ __t_ca_priv_key_mode }}'
+        regenerate: '{{ __t_ca_priv_key_regenerate }}'
+
+    - name: 'generate_root_ca | Set fact: __t_ca_key_usage'
+      ansible.builtin.set_fact:
+        __t_ca_key_usage: >-
+          {{
+            [
+              'keyCertSign',
+              'cRLSign'
+            ]
+            if __t_ca_crl_enable is defined
+            and __t_ca_crl_enable
+            else
+            [
+              'keyCertSign'
+            ]
+          }}
+
+    - name: 'generate_root_ca | Create certificate signing request (CSR) for the CA certificate: {{ __t_ca_csr_path }}'
+      community.crypto.openssl_csr:
+        path: '{{ __t_ca_csr_path }}'
+        privatekey_path: '{{ __t_ca_priv_key_path }}'
+        privatekey_passphrase: '{{ __t_ca_priv_key_pass }}'
+        common_name: '{{ __t_ca_csr_common_name }}'
+        email_address: '{{ __t_ca_csr_email }}'
+        organization_name: '{{ __t_ca_csr_org }}'
+        country_name: '{{ __t_ca_csr_country }}'
+        organizational_unit_name: '{{ __t_ca_csr_org_unit }}'
+        state_or_province_name: '{{ __t_ca_csr_state }}'
+        locality_name: '{{ __t_ca_csr_loc }}'
+        basic_constraints:
+          - 'CA:TRUE'
+        basic_constraints_critical: true
+        key_usage: '{{ __t_ca_key_usage }}'
+        key_usage_critical: true
+
+    - name: 'generate_root_ca | Sign the CSR for the root CA: {{ __t_ca_csr_path }}'
+      community.crypto.x509_certificate:
+        path: '{{ __t_ca_cert_path }}'
+        csr_path: '{{ __t_ca_csr_path }}'
+        privatekey_path: '{{ __t_ca_priv_key_path }}'
+        privatekey_passphrase: '{{ __t_ca_priv_key_pass }}'
+        provider: 'selfsigned'
+        owner: '{{ __t_ca_cert_owner }}'
+        group: '{{ __t_ca_cert_group }}'
+        mode: '{{ __t_ca_cert_mode }}'
+
+- name: 'generate_root_ca | Include tasks to generate the CA CRL'
+  ansible.builtin.include_tasks:
+    file: 'generate_ca_crl.yml'
+  vars:
+    # CRL directory
+    __t_crl_dir_path: '{{ __t_ca_crl_dir_path }}'
+    __t_crl_dir_owner: '{{ __t_ca_crl_dir_owner }}'
+    __t_crl_dir_group: '{{ __t_ca_crl_dir_group }}'
+    __t_crl_dir_mode: '{{ __t_ca_crl_dir_mode }}'
+
+    # CRL certificate
+    __t_crl_path: '{{ __t_ca_crl_path }}'
+    __t_crl_owner: '{{ __t_ca_crl_owner }}'
+    __t_crl_group: '{{ __t_ca_crl_group }}'
+    __t_crl_mode: '{{ __t_ca_crl_mode }}'
+    __t_crl_next_update: '{{ __t_ca_crl_next_update }}'
+    __t_crl_generation_mode: '{{ __t_ca_crl_generation_mode }}'
+    __t_crl_ignore_timestamps: '{{ __t_ca_crl_ignore_timestamps }}'
+
+    # List of certificates
+    __t_pki_certificates: "{{ __t_ca_intermediates }}"
+  when: >
+    __t_root_ca.crl_enable is defined
+    and __t_root_ca.crl_enable
+
+- name: 'generate_root_ca | Include tasks to generate intermediate certificate authorities'
+  ansible.builtin.include_tasks:
+    file: 'generate_intermediate_ca.yml'
+  vars:
+    # Root CA
+    __t_root_ca_priv_key_path: '{{ __t_ca_priv_key_path }}'
+    __t_root_ca_priv_key_pass: '{{ __t_ca_priv_key_pass }}'
+    __t_root_ca_public_key_path: '{{ __t_ca_cert_path }}'
+
+    # CA root path
+    __t_intermediate_ca_root_dir_path: '{{ __t_intermediate.root_dir_path }}'
+    __t_intermediate_ca_root_dir_owner: '{{ __t_intermediate.root_dir_owner }}'
+    __t_intermediate_ca_root_dir_group: '{{ __t_intermediate.root_dir_group }}'
+    __t_intermediate_ca_root_dir_mode: '{{ __t_intermediate.root_dir_mode }}'
+
+    # CA cert path
+    __t_intermediate_ca_cert_dir_path: '{{ __t_intermediate.cert_dir_path }}'
+    __t_intermediate_ca_cert_dir_owner: '{{ __t_intermediate.cert_dir_owner }}'
+    __t_intermediate_ca_cert_dir_group: '{{ __t_intermediate.cert_dir_group }}'
+    __t_intermediate_ca_cert_dir_mode: '{{ __t_intermediate.cert_dir_mode }}'
+
+    # CA private key path
+    __t_intermediate_ca_priv_key_dir_path: '{{ __t_intermediate.priv_key_dir_path }}'
+    __t_intermediate_ca_priv_key_dir_owner: '{{ __t_intermediate.priv_key_dir_owner }}'
+    __t_intermediate_ca_priv_key_dir_group: '{{ __t_intermediate.priv_key_dir_group }}'
+    __t_intermediate_ca_priv_key_dir_mode: '{{ __t_intermediate.priv_key_dir_mode }}'
+
+    # CA CSR path
+    __t_intermediate_ca_csr_dir_path: '{{ __t_intermediate.csr_dir_path }}'
+    __t_intermediate_ca_csr_dir_owner: '{{ __t_intermediate.csr_dir_owner }}'
+    __t_intermediate_ca_csr_dir_group: '{{ __t_intermediate.csr_dir_group }}'
+    __t_intermediate_ca_csr_dir_mode: '{{ __t_intermediate.csr_dir_mode }}'
+
+    # Private key
+    __t_intermediate_ca_priv_key_path: '{{ __t_intermediate.priv_key_path }}'
+    __t_intermediate_ca_priv_key_pass_cipher: '{{ __t_intermediate.priv_key_pass_cipher }}'
+    __t_intermediate_ca_priv_key_pass: '{{ __t_intermediate.priv_key_pass }}'
+    __t_intermediate_ca_priv_key_type: '{{ __t_intermediate.priv_key_type }}'
+    __t_intermediate_ca_priv_key_size: '{{ __t_intermediate.priv_key_size }}'
+    __t_intermediate_ca_priv_key_owner: '{{ __t_intermediate.priv_key_owner }}'
+    __t_intermediate_ca_priv_key_group: '{{ __t_intermediate.priv_key_group }}'
+    __t_intermediate_ca_priv_key_mode: '{{ __t_intermediate.priv_key_mode }}'
+    __t_intermediate_ca_priv_key_regenerate: '{{ __t_intermediate.priv_key_regenerate }}'
+    __t_intermediate_ca_priv_key_force_generation: '{{ __t_intermediate.priv_key_force_generation }}'
+
+    # CA CSR
+    __t_intermediate_ca_csr_path: '{{ __t_intermediate.csr_path }}'
+    __t_intermediate_ca_csr_common_name: '{{ __t_intermediate.csr_common_name }}'
+    __t_intermediate_ca_csr_email: '{{ __t_intermediate.csr_email }}'
+    __t_intermediate_ca_csr_org: '{{ __t_intermediate.csr_org }}'
+    __t_intermediate_ca_csr_country: '{{ __t_intermediate.csr_country }}'
+    __t_intermediate_ca_csr_org_unit: '{{ __t_intermediate.csr_org_unit }}'
+    __t_intermediate_ca_csr_state: '{{ __t_intermediate.csr_state }}'
+    __t_intermediate_ca_csr_loc: '{{ __t_intermediate.csr_loc }}'
+
+    # CA certificate (aka public key)
+    __t_intermediate_ca_cert_path: '{{ __t_intermediate.cert_path }}'
+    __t_intermediate_ca_cert_owner: '{{ __t_intermediate.cert_owner }}'
+    __t_intermediate_ca_cert_group: '{{ __t_intermediate.cert_group }}'
+    __t_intermediate_ca_cert_mode: '{{ __t_intermediate.cert_mode }}'
+
+    # CA chain certificate
+    __t_intermediate_ca_chain_certificate_enable: '{{ __t_intermediate.chain_certificate_enable }}'
+
+    # chain certificates directory
+    __t_intermediate_ca_chain_certificate_dir_path: '{{ __t_intermediate.chain_certificate_dir_path }}'
+    __t_intermediate_ca_chain_certificate_dir_owner: '{{ __t_intermediate.chain_certificate_dir_owner }}'
+    __t_intermediate_ca_chain_certificate_dir_group: '{{ __t_intermediate.chain_certificate_dir_group }}'
+    __t_intermediate_ca_chain_certificate_dir_mode: '{{ __t_intermediate.chain_certificate_dir_mode }}'
+
+    # assembled from the root CA's public key and the intermediate's public key
+    __t_intermediate_ca_chain_certificate_path: '{{ __t_intermediate.chain_certificate_path }}'
+    __t_intermediate_ca_chain_certificate_owner: '{{ __t_intermediate.chain_certificate_owner }}'
+    __t_intermediate_ca_chain_certificate_group: '{{ __t_intermediate.chain_certificate_group }}'
+    __t_intermediate_ca_chain_certificate_mode: '{{ __t_intermediate.chain_certificate_mode }}'
+
+    # CRL
+    __t_intermediate_ca_crl_enable: '{{ __t_intermediate.crl_enable }}'
+    # CRL directory
+    __t_intermediate_ca_crl_dir_path: '{{ __t_intermediate.crl_dir_path }}'
+    __t_intermediate_ca_crl_dir_owner: '{{ __t_intermediate.crl_dir_owner }}'
+    __t_intermediate_ca_crl_dir_group: '{{ __t_intermediate.crl_dir_group }}'
+    __t_intermediate_ca_crl_dir_mode: '{{ __t_intermediate.crl_dir_mode }}'
+
+    # CRL certificate
+    __t_intermediate_ca_crl_path: '{{ __t_intermediate.crl_path }}'
+    __t_intermediate_ca_crl_owner: '{{ __t_intermediate.crl_owner }}'
+    __t_intermediate_ca_crl_group: '{{ __t_intermediate.crl_group }}'
+    __t_intermediate_ca_crl_mode: '{{ __t_intermediate.crl_mode }}'
+    __t_intermediate_ca_crl_next_update: '{{ __t_intermediate.crl_next_update }}'
+    __t_intermediate_ca_crl_generation_mode: '{{ __t_intermediate.crl_generation_mode }}'
+    __t_intermediate_ca_crl_ignore_timestamps: '{{ __t_intermediate.crl_ignore_timestamps }}'
+
+  loop: '{{ __t_ca_intermediates }}'
+  loop_control:
+    loop_var: '__t_intermediate'
+...

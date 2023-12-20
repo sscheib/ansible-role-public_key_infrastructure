@@ -1,0 +1,23 @@
+---
+galaxy_info:
+  role_name: 'public_key_infrastructure'
+  namespace: 'sscheib'
+  author: 'Steffen Scheib'
+  description: >-
+    This role generates Root Certificate Authorities (CA) and Intermediate Certificate Authorities (CA).
+    The Intermediate CA/s should be used to sign Certificate Signing Requests (CSR).
+  issue_tracker_url: 'https://github.com/sscheib/public_key_infrastructure/issues'
+  license: 'GPL-2.0-or-later'
+  min_ansible_version: '2.12'
+  platforms:
+    - name: 'EL'
+      versions:
+        - '8'
+
+  galaxy_tags:
+    - 'ssl'
+    - 'certificate'
+    - 'pki'
+
+dependencies: []
+...
