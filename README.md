@@ -7,16 +7,19 @@ This role generates Root Certificate Authorities (CA) and Intermediate Certifica
 Signing Requests (CSR).
 
 A typical scenario would be to have a Root CA and multiple Intermediate CAs:
-root.ca.example.com
-  - intermediate1.ca.example.com
-  - intermediate2.ca.example.com
-  - intermediate3.ca.example.com
+  - root.ca.example.com
+    - intermediate1.ca.example.com
+    - intermediate2.ca.example.com
+    - intermediate3.ca.example.com
 
 With this role you can create multiple Root CAs with each of them "having" multiple Intermediate CAs.
 
 This role is slightly different from my other roles, as I assert that the variables are defined properly when including the tasks to create either the Root CAs or the
 Intermediate CAs. Further, there are *no* defaults set for the CAs. Everything *has to be defined*. This is done on purpose to ensure that the role is understood before
 "randomly" creating CAs. Of course, an extensive example is included in this README.
+
+Once you setup your PKI, you can make use my role [`generate_ssl_key_pairs`](https://github.com/sscheib/ansible-role-generate_ssl_key_pairs) to create and sign certificates,
+which are then distributed to the managed nodes.
 
 Requirements
 ------------
@@ -70,11 +73,10 @@ With the above example `root-ca1.example.com` will sign the Intermediates `inter
 
 Why multiple Root CAs you ask? My use case is that I have multiple Root CA and Intermediate CA pairs for each use case *per sub-domain*. Yes, it's complicated.
 
-For starting off I'd recommend to use **one Root CA** with **Intermediate CA**.
-
+For starting off I'd recommend to use **one Root CA** with **one Intermediate CA**.
 
 In below example you'll find references to the modules being used on specific options. I don't mean to replicate the excellent documentation of the `community.crypto`
-collection, thereforce I rather ask you to look in the documentation for specific options.
+collection, therefore I rather ask you to look in the documentation for specific options.
 
 Below you'll find an example with one Root CA and two Intermediate CAs:
 
@@ -90,7 +92,7 @@ pki_root_certificate_authorities:
     root_dir_mode: '0700'
 
     # CA private keys directory + permissions of the directory
-    # This is whereere the private keys will be stored
+    # This is where the private keys will be stored
     priv_key_dir_path: '/root/ansible_ca/private'
     priv_key_dir_owner: 'root'
     priv_key_dir_group: 'root'
@@ -275,7 +277,8 @@ pki_root_certificate_authorities:
 
         # private key
         priv_key_path: '/root/ansible_ca/intermediates/office.pki.example.com/private/intermediate.key.pem'
-        priv_key_pass: 'dasiugdasiugdaskigda213109udsab'
+        priv_key_pass: !vault |
+               $ANSIBLE_VAULT;1.1;AES256
         priv_key_type: 'RSA'
         priv_key_size: '4096'
         priv_key_force_generation: false
@@ -361,7 +364,8 @@ pki_root_certificate_authorities:
 
         # private key
         priv_key_path: '/root/ansible_ca/intermediates/home.pki.example.com/private/intermediate.key.pem'
-        priv_key_pass: 'dasiugdasiugdaskigda213109udsab'
+        priv_key_pass: !vault |
+               $ANSIBLE_VAULT;1.1;AES256
         priv_key_type: 'RSA'
         priv_key_size: '4096'
         priv_key_force_generation: false
@@ -421,7 +425,7 @@ and the Intermediate CA.
 ## Viewing the generated certificates
 
 If you'd like to view the certificates that have been generated, the `openssl` command on the PKI host can be used.
-Please find below a few examples how to view each of the certificates.
+Please find below a few examples on how to view each of the certificates.
 
 ### Private key
 
@@ -544,9 +548,10 @@ Taking this into account, the command should look like the following:
 
 ```
 openssl verify -CAfile /root/new_ca/certs/ca.cert.pem -untrusted /root/new_ca/intermediate/dev.pki.int.scheib.me/certs/intermediate.cert.pem /root/new_ca/intermediate/dev.pki.int.scheib.me/certs/openwrt.dev.int.scheib.me.cert.pem
+/root/new_ca/intermediate/dev.pki.int.scheib.me/certs/openwrt.dev.int.scheib.me.cert.pem: OK
 ```
 
-If you have multiple Intermediate CAs, the order of the `-untrusted` switches does *not* matter.
+If you have multiple Intermediate CAs: The order of the `-untrusted` switches does *not* matter.
 
 
 ### Verifying if a certificate is revoked
@@ -565,7 +570,7 @@ openssl verify -crl_check -CAfile /root/ansible_ca/certs/ca.cert.pem -CRLfile /r
 /root/ansible_ca/intermediates/home.pki.example.com/certs/intermediate.cert.pem: OK
 ```
 
-With an Intermediate CA inbetween, it gets - unfortunately - a little more complicated. 
+With an Intermediate CA in between, it gets - unfortunately - a little more complicated. 
 
 Basically `openssl` needs the following: Root CA public key + Intermediate CA public key + Root CA CRL + Intermediate CA CRL + certificate to check
 
@@ -601,7 +606,7 @@ Example Playbook
         root_dir_mode: '0700'
     
         # CA private keys directory + permissions of the directory
-        # This is whereere the private keys will be stored
+        # This is where the private keys will be stored
         priv_key_dir_path: '/root/ansible_ca/private'
         priv_key_dir_owner: 'root'
         priv_key_dir_group: 'root'
@@ -786,7 +791,8 @@ Example Playbook
     
             # private key
             priv_key_path: '/root/ansible_ca/intermediates/office.pki.example.com/private/intermediate.key.pem'
-            priv_key_pass: 'dasiugdasiugdaskigda213109udsab'
+            priv_key_pass: !vault |
+                  $ANSIBLE_VAULT;1.1;AES256
             priv_key_type: 'RSA'
             priv_key_size: '4096'
             priv_key_force_generation: false
@@ -872,7 +878,8 @@ Example Playbook
     
             # private key
             priv_key_path: '/root/ansible_ca/intermediates/home.pki.example.com/private/intermediate.key.pem'
-            priv_key_pass: 'dasiugdasiugdaskigda213109udsab'
+            priv_key_pass: !vault |
+                  $ANSIBLE_VAULT;1.1;AES256
             priv_key_type: 'RSA'
             priv_key_size: '4096'
             priv_key_force_generation: false
